@@ -1,0 +1,199 @@
+#!/bin/sh
+# $Id: avidemux.SlackBuild,v 1.16 2011/05/11 21:29:23 root Exp root $
+# Copyright 2009, 2010, 2011  Eric Hameleers, Eindhoven, NL
+# All rights reserved.
+#
+#   Permission to use, copy, modify, and distribute this software for
+#   any purpose with or without fee is hereby granted, provided that
+#   the above copyright notice and this permission notice appear in all
+#   copies.
+#
+#   THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
+#   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+#   IN NO EVENT SHALL THE AUTHORS AND COPYRIGHT HOLDERS AND THEIR
+#   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+#   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+#   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#   OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+#   OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+#   SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+#  Script modified for Avidemux 2.5.6 by Robert Zelic
+# -----------------------------------------------------------------------------
+
+# Set initial variables:
+
+PRGNAM=avidemux
+VERSION=${VERSION:-2.5.6}
+BUILD=${BUILD:-1}
+NUMJOBS=${NUMJOBS:" -j4 "}
+TAG=${TAG:-zero}
+
+DOCS="AUTHORS ChangeLog COPYING* History README* TODO"
+
+# Place to build (TMP) package (PKG) and output (OUTPUT) the program:
+TMP=${TMP:-/tmp/build}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+SOURCE="${PRGNAM}_${VERSION}.tar.gz"
+
+# Automatically determine the architecture we're building on:
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) export ARCH=i486 ;;
+    arm*) export ARCH=arm ;;
+    # Unless $ARCH is already set, use uname -m for all other archs:
+       *) export ARCH=$( uname -m ) ;;
+  esac
+fi
+
+case "$ARCH" in
+  i486)      SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+             SLKLDFLAGS=""; LIBDIRSUFFIX=""
+             ;;
+  x86_64)    SLKCFLAGS="-O2 -fPIC"
+             SLKLDFLAGS="-L/usr/lib64"; LIBDIRSUFFIX="64"
+             ;;
+  *)         SLKCFLAGS="-O2"
+             SLKLDFLAGS=""; LIBDIRSUFFIX=""
+             ;;
+esac
+
+set -e
+
+CWD=$(pwd)
+# Create working directories:
+mkdir -p $OUTPUT          # place for the package to be saved
+mkdir -p $TMP/tmp-$PRGNAM # location to build the source
+mkdir -p $PKG             # place for the package to be built
+rm -rf $PKG/*             # always erase old package's contents
+rm -rf $TMP/tmp-$PRGNAM/* # remove the remnants of previous build
+                          # remove old log files
+
+cd $TMP/tmp-$PRGNAM
+echo "Extracting the source archive(s) for $PRGNAM..."
+tar -xvf $CWD/${SOURCE}
+cd ${PRGNAM}_${VERSION}
+
+cat $CWD/avidemux-2.5.6-ffmpeg_aac.patch | patch -p1 --verbose
+cat $CWD/avidemux-2.5.6-ffmpeg_parallel_build.patch | patch -p1 --verbose
+
+if [ "$ARCH" = "x86_64" ]; then
+  # Some paths are incorrectly hardcoded to "lib":
+  sed -i -e "s/Dir=\"lib\"/Dir=\"lib${LIBDIRSUFFIX}\"/" $(grep -lr 'Dir="lib"' .)
+fi
+
+chown -R root:root .
+chmod -R u+w,go+r-w,a+X-s .
+
+echo Building core ...
+mkdir -p build
+cd build
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DMAN_INSTALL_DIR=/usr/man \
+    -DSYSCONF_INSTALL_DIR=/etc \
+    -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+    ..
+  make $NUMJOBS
+  make DESTDIR=$PKG install
+cd -
+
+echo Building plugins ...
+mkdir -p build_plugins
+cd build_plugins
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DMAN_INSTALL_DIR=/usr/man \
+    -DSYSCONF_INSTALL_DIR=/etc \
+    -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+    -DAVIDEMUX_SOURCE_DIR=$(cd .. ; pwd) \
+    -DAVIDEMUX_CORECONFIG_DIR=$(cd .. ; pwd)/build/config \
+    -DAVIDEMUX_INSTALL_PREFIX=$(cd .. ; pwd)/build \
+    ../plugins
+  make $NUMJOBS
+  make DESTDIR=$PKG install
+cd -
+
+# Add the menu entry:
+mkdir -p $PKG/usr/share/{applications,pixmaps}
+mkdir -p $PKG/usr/share/icons/hicolor/{16x16,32x32,48x48,64x64}/apps
+# If the qt4 binary was built, we prefer to use that over the gtk version:
+if [ -x $PKG/usr/bin/avidemux2_qt4 ]; then
+  cat avidemux2.desktop | sed -e 's/_gtk/_qt4/' \
+    > $PKG/usr/share/applications/avidemux2.desktop
+else
+  install -m644 avidemux2.desktop $PKG/usr/share/applications/avidemux2.desktop
+fi
+install -m644 avidemux_icon.png $PKG/usr/share/pixmaps/avidemux.png 
+install -m644 avidemux_icon.png \
+  ${PKG}/usr/share/icons/hicolor/64x64/apps/avidemux.png
+convert avidemux_icon.png -resize 16x16 \
+  ${PKG}/usr/share/icons/hicolor/16x16/apps/avidemux.png
+convert avidemux_icon.png -resize 32x32 \
+  ${PKG}/usr/share/icons/hicolor/32x32/apps/avidemux.png
+convert avidemux_icon.png -resize 48x48 \
+  ${PKG}/usr/share/icons/hicolor/48x48/apps/avidemux.png
+
+# Add this to the doinst.sh:
+! [ -d $PKG/install ] && mkdir -p $PKG/install
+cat <<EOT >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database /usr/share/applications > /dev/null 2>&1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t usr/share/icons/hicolor 1> /dev/null 2>&1
+  fi
+fi
+
+# Update the mime database:
+if [ -x usr/bin/update-mime-database ]; then
+  chroot . /usr/bin/update-mime-database usr/share/mime >/dev/null 2>&1
+fi
+
+EOT
+
+# Add documentation:
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a $DOCS $PKG/usr/doc/$PRGNAM-$VERSION || true
+cat $CWD/$(basename $0) > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION/patches
+cp -a $CWD/*.{diff,patch} $PKG/usr/doc/$PRGNAM-$VERSION/patches/ || true
+chown -R root:root $PKG/usr/doc/$PRGNAM-$VERSION
+find $PKG/usr/doc -type f -exec chmod 644 {} \;
+
+# Compress the man page(s):
+if [ -d $PKG/usr/man ]; then
+  find $PKG/usr/man -type f -name "*.?" -exec gzip -9f {} \;
+  for i in $(find $PKG/usr/man -type l -name "*.?") ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+fi
+
+# Strip binaries:
+find $PKG | xargs file | grep -e "executable" -e "shared object" \
+  | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null
+
+# Add a package description:
+mkdir -p $PKG/install
+cat $CWD/slack-desc > $PKG/install/slack-desc
+if [ -f $CWD/doinst.sh ]; then
+  cat $CWD/doinst.sh >> $PKG/install/doinst.sh
+fi
+if [ -f $CWD/slack-required ]; then
+  cat $CWD/slack-required > $PKG/install/slack-required
+fi
+
+# Build the package:
+cd $PKG
+makepkg --linkadd y --chown n $OUTPUT/${PRGNAM}-${VERSION}-${ARCH}-${BUILD}${TAG}.tgz 2>&1 | tee $OUTPUT/makepkg-${PRGNAM}.log

@@ -1,0 +1,247 @@
+#!/bin/sh
+
+# Set initial variables:
+
+PRGNAM=avidemux
+VERSION=$(date +"%Y%m%d")
+BUILD=${BUILD:-2}
+NUMJOBS=${NUMJOBS:" -j4 "}
+
+DOCS="AUTHORS ChangeLog COPYING* History README* TODO"
+
+# Where do we look for sources?
+#SRCDIR=$(cd $(dirname $0); pwd)
+
+# Place to build (TMP) package (PKG) and output (OUTPUT) the program:
+TMP=${TMP:-/tmp/build}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+#SOURCE="$SRCDIR/${PRGNAM}-${VERSION}.tar.gz"
+#SRCURL="http://downloads.sourceforge.net/${PRGNAM}/${PRGNAM}_${VERSION}.tar.gz"
+
+# Automatically determine the architecture we're building on:
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) export ARCH=i486 ;;
+    arm*) export ARCH=arm ;;
+    # Unless $ARCH is already set, use uname -m for all other archs:
+       *) export ARCH=$( uname -m ) ;;
+  esac
+fi
+
+case "$ARCH" in
+  i486)      SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+             SLKLDFLAGS=""; LIBDIRSUFFIX=""
+             ;;
+  x86_64)    SLKCFLAGS="-O2 -fPIC"
+             SLKLDFLAGS="-L/usr/lib64"; LIBDIRSUFFIX="64"
+             ;;
+  *)         SLKCFLAGS="-O2"
+             SLKLDFLAGS=""; LIBDIRSUFFIX=""
+             ;;
+esac
+
+# Exit the script on errors:
+set -e
+trap 'echo "$0 FAILED at line ${LINENO}" | tee $OUTPUT/error-${PRGNAM}.log' ERR
+# Catch unitialized variables:
+set -u
+P1=${1:-1}
+
+# Save old umask and set to 0022:
+_UMASK_=$(umask)
+umask 0022
+
+# Create working directories:
+mkdir -p $OUTPUT          # place for the package to be saved
+mkdir -p $TMP/tmp-$PRGNAM # location to build the source
+mkdir -p $PKG             # place for the package to be built
+rm -rf $PKG/*             # always erase old package's contents
+rm -rf $TMP/tmp-$PRGNAM/* # remove the remnants of previous build
+rm -rf $OUTPUT/{configure,make,install,error,makepkg}-$PRGNAM.log
+                          # remove old log files
+
+# Source file availability:
+#if ! [ -f ${SOURCE} ]; then
+#  if ! [ "x${SRCURL}" == "x" ]; then
+    # Check if the $SRCDIR is writable at all - if not, download to $OUTPUT
+#    [ -w "$SRCDIR" ] || SOURCE="$OUTPUT/$(basename $SOURCE)"
+#    echo "Source '$(basename ${SOURCE})' not available yet..."
+#    echo "Will download file to $(dirname $SOURCE)"
+#    wget -nv -T 20 -O "${SOURCE}" "${SRCURL}" || true
+#    if [ $? -ne 0 -o ! -s "${SOURCE}" ]; then
+#      echo "Downloading '$(basename ${SOURCE})' failed... aborting the build."
+#      mv -f "${SOURCE}" "${SOURCE}".FAIL
+#      exit 1
+#    fi
+#  else
+#    echo "File '$(basename ${SOURCE})' not available... aborting the build."
+#    exit 1
+#  fi
+#fi
+
+#if [ "$P1" == "--download" ]; then
+#  echo "Download complete."
+#  exit 0
+#fi
+
+# --- PACKAGE BUILDING ---
+
+#echo "++"
+#echo "|| $PRGNAM-$VERSION"
+#echo "++"
+
+#cd $TMP/tmp-$PRGNAM
+#echo "Extracting the source archive(s) for $PRGNAM..."
+#tar -xvf ${SOURCE}
+SRCDIR=$(pwd)
+cd ${PRGNAM}
+#touch $OUTPUT/patch-${PRGNAM}.log
+
+## Fix location of internationalisation files (no longer needed since 2.5.3):
+#cat $SRCDIR/avidemux-2.5_i18n.diff | patch -p1 --verbose 2>&1 \
+#  | tee $OUTPUT/patch-${PRGNAM}.log
+
+# Fix broken sound output in Qt interface:
+#cat $SRCDIR/avidemux-2.5.4_audioDevice.patch | patch -p0 --verbose 2>&1 \
+#  | tee -a $OUTPUT/patch-${PRGNAM}.log
+
+# Fix crash in the GTK dialog:
+#cat $SRCDIR/avidemux-2.5.4_gtkmenu_crash.patch | patch -p0 --verbose 2>&1 \
+#  | tee -a $OUTPUT/patch-${PRGNAM}.log
+
+# Fix compilation against recent snapshots of x264:
+#cat $SRCDIR/avidemux-2.5.4_x264.patch | patch -p0 --verbose 2>&1 \
+#  | tee -a $OUTPUT/patch-${PRGNAM}.log
+
+# Use correct X264 option with recent snapshots of x264:
+#cat $SRCDIR/avidemux-2.5.4_x264_option.patch | patch -p0 --verbose 2>&1 \
+#  | tee -a $OUTPUT/patch-${PRGNAM}.log
+
+if [ "$ARCH" = "x86_64" ]; then
+  # Some paths are incorrectly hardcoded to "lib":
+  sed -i -e "s/Dir=\"lib\"/Dir=\"lib${LIBDIRSUFFIX}\"/" $(grep -lr 'Dir="lib64"' .)
+fi
+
+chown -R root:root .
+chmod -R u+w,go+r-w,a+X-s .
+
+echo Building core ...
+mkdir -p build
+cd build
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DMAN_INSTALL_DIR=/usr/man \
+    -DSYSCONF_INSTALL_DIR=/etc \
+    -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+    ..
+  make $NUMJOBS 2>&1 | tee $OUTPUT/make-${PRGNAM}.log
+  make DESTDIR=$PKG install 2>&1 | tee $OUTPUT/install-${PRGNAM}.log
+cd -
+
+echo Building plugins ...
+mkdir -p build_plugins
+cd build_plugins
+  cmake \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DMAN_INSTALL_DIR=/usr/man \
+    -DSYSCONF_INSTALL_DIR=/etc \
+    -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+    -DAVIDEMUX_SOURCE_DIR=$(cd .. ; pwd) \
+    -DAVIDEMUX_CORECONFIG_DIR=$(cd .. ; pwd)/build/config \
+    -DAVIDEMUX_INSTALL_PREFIX=$(cd .. ; pwd)/build \
+    ../plugins
+  make $NUMJOBS 2>&1 | tee $OUTPUT/make-${PRGNAM}.log
+  make DESTDIR=$PKG install 2>&1 | tee $OUTPUT/install-${PRGNAM}.log
+cd -
+
+# Add the menu entry:
+mkdir -p $PKG/usr/share/{applications,pixmaps}
+mkdir -p $PKG/usr/share/icons/hicolor/{16x16,32x32,48x48,64x64}/apps
+# If the qt4 binary was built, we prefer to use that over the gtk version:
+if [ -x $PKG/usr/bin/avidemux2_qt4 ]; then
+  cat avidemux2.desktop | sed -e 's/_gtk/_qt4/' \
+    > $PKG/usr/share/applications/avidemux2.desktop
+else
+  install -m644 avidemux2.desktop $PKG/usr/share/applications/avidemux2.desktop
+fi
+install -m644 avidemux_icon.png $PKG/usr/share/pixmaps/avidemux.png 
+install -m644 avidemux_icon.png \
+  ${PKG}/usr/share/icons/hicolor/64x64/apps/avidemux.png
+convert avidemux_icon.png -resize 16x16 \
+  ${PKG}/usr/share/icons/hicolor/16x16/apps/avidemux.png
+convert avidemux_icon.png -resize 32x32 \
+  ${PKG}/usr/share/icons/hicolor/32x32/apps/avidemux.png
+convert avidemux_icon.png -resize 48x48 \
+  ${PKG}/usr/share/icons/hicolor/48x48/apps/avidemux.png
+
+# Add this to the doinst.sh:
+! [ -d $PKG/install ] && mkdir -p $PKG/install
+cat <<EOT >> $PKG/install/doinst.sh
+# Update the desktop database:
+if [ -x usr/bin/update-desktop-database ]; then
+  chroot . /usr/bin/update-desktop-database /usr/share/applications > /dev/null 2>&1
+fi
+
+# Update hicolor theme cache:
+if [ -d usr/share/icons/hicolor ]; then
+  if [ -x /usr/bin/gtk-update-icon-cache ]; then
+    chroot . /usr/bin/gtk-update-icon-cache -f -t usr/share/icons/hicolor 1> /dev/null 2>&1
+  fi
+fi
+
+# Update the mime database:
+if [ -x usr/bin/update-mime-database ]; then
+  chroot . /usr/bin/update-mime-database usr/share/mime >/dev/null 2>&1
+fi
+
+EOT
+
+# Add documentation:
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+cp -a $DOCS $PKG/usr/doc/$PRGNAM-$VERSION || true
+cat $SRCDIR/$(basename $0) > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION/patches
+cp -a $SRCDIR/*.{diff,patch} $PKG/usr/doc/$PRGNAM-$VERSION/patches/ || true
+chown -R root:root $PKG/usr/doc/$PRGNAM-$VERSION
+find $PKG/usr/doc -type f -exec chmod 644 {} \;
+
+# Compress the man page(s):
+if [ -d $PKG/usr/man ]; then
+  find $PKG/usr/man -type f -name "*.?" -exec gzip -9f {} \;
+  for i in $(find $PKG/usr/man -type l -name "*.?") ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+fi
+
+# Strip binaries:
+find $PKG | xargs file | grep -e "executable" -e "shared object" \
+  | grep ELF | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null
+
+# Add a package description:
+mkdir -p $PKG/install
+#cat $SRCDIR/slack-desc > $PKG/install/slack-desc
+if [ -f $SRCDIR/doinst.sh ]; then
+  cat $SRCDIR/doinst.sh >> $PKG/install/doinst.sh
+fi
+if [ -f $SRCDIR/slack-required ]; then
+  cat $SRCDIR/slack-required > $PKG/install/slack-required
+fi
+
+# Build the package:
+cd $PKG
+makepkg --linkadd y --chown n $OUTPUT/${PRGNAM}-${VERSION}-${ARCH}-${BUILD}.tgz 2>&1 | tee $OUTPUT/makepkg-${PRGNAM}.log
+cd $OUTPUT
+md5sum ${PRGNAM}-${VERSION}-${ARCH}-${BUILD}.tgz > ${PRGNAM}-${VERSION}-${ARCH}-${BUILD}.tgz.md5
+cd -
+#cat $PKG/install/slack-desc | grep "^${PRGNAM}" > $OUTPUT/${PRGNAM}-${VERSION}-${ARCH}-${BUILD}.txt
+#if [ -f $PKG/install/slack-required ]; then
+#  cat $PKG/install/slack-required > $OUTPUT/${PRGNAM}-${VERSION}-${ARCH}-${BUILD}.dep
+#fi
+
+# Restore the original umask:
+umask ${_UMASK_}
+
