@@ -1,4 +1,5 @@
 slackbuild-scripts
 ==================
 
-My SB scripts
+Hi!
+This is my SlackBuild scripts repository!
