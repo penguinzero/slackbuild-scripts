@@ -56,6 +56,7 @@ find . \
 
 zcat $CWD/gcc-patch.diff.gz | patch -p1 --verbose || exit 1
 zcat $CWD/glib-fix.diff.gz | patch -p1 --verbose || exit 1
+zcat $CWD/warnings.diff.gz | patch -p1 --verbose || exit 1
 
 
 CFLAGS="$SLKCFLAGS" \
