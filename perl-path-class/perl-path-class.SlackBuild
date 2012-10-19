@@ -4,6 +4,7 @@
 
 # (C) 2007 Michael Wagner <lapinours@web.de>
 # Copyright 2010, 2012  Binh Nguyen <binhvng@gmail.com>
+# Copyright 2012 Robert Zelic <zerobertons@yahoo.com>
 # All rights reserved.
 #
 # Redistribution and use of this script, with or without modification, is
@@ -26,17 +27,9 @@
 PRGNAM=perl-path-class
 VERSION=${VERSION:-0.26}
 BUILD=${BUILD:-1}
-TAG=${TAG:-_SBo}
+TAG=${TAG:-_zero}
 
 SRCNAM=Path-Class
-
-if [ -z "$ARCH" ]; then
-  case "$( uname -m )" in
-    i?86) ARCH=i486 ;;
-    arm*) ARCH=arm ;;
-       *) ARCH=$( uname -m ) ;;
-  esac
-fi
 
 CWD=$(pwd)
 TMP=${TMP:-/tmp/SBo}
@@ -98,4 +91,4 @@ mkdir -p $PKG/install
 cat $CWD/slack-desc > $PKG/install/slack-desc
 
 cd $PKG
-/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-noarch-$BUILD$TAG.${PKGTYPE:-tgz}
