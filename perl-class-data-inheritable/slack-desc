@@ -1,0 +1,18 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.  Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in.  You must
+# make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':'.
+
+                           |-----handy-ruler------------------------------------------------------|
+perl-class-data-inheritable: Class::Data::Inheritable (perl module)
+perl-class-data-inheritable:
+perl-class-data-inheritable: Class::Data::Inheritable is for creating accessor/mutators to class
+perl-class-data-inheritable: data. That is, if you want to store something about your class as a
+perl-class-data-inheritable: whole (instead of about a single object). This data is then
+perl-class-data-inheritable: inherited by your subclasses and can be overriden.
+perl-class-data-inheritable:
+perl-class-data-inheritable:
+perl-class-data-inheritable:
+perl-class-data-inheritable:
