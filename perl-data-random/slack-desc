@@ -6,13 +6,13 @@
 # customary to leave one space after the ':'.
 
                  |-----handy-ruler------------------------------------------------------|
-perl-common-sense: common::sense (perl module)
-perl-common-sense:
-perl-common-sense: This module implements some sane defaults for Perl programs, as
-perl-common-sense: defined by two typical (or not so typical - use your common sense)
-perl-common-sense: specimens of Perl coders.
-perl-common-sense:
-perl-common-sense:
-perl-common-sense:
-perl-common-sense:
-perl-common-sense:
+perl-data-random: Data::Random (perl module)
+perl-data-random:
+perl-data-random: A module used to generate random data. Useful mostly for test
+perl-data-random: programs.
+perl-data-random:
+perl-data-random:
+perl-data-random:
+perl-data-random:
+perl-data-random:
+perl-data-random:
