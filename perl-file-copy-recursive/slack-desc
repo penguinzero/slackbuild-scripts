@@ -1,0 +1,18 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.  Line
+# up the first '|' above the ':' following the base package name, and the '|'
+# on the right side marks the last column you can put a character in.  You must
+# make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':'.
+
+                        |-----handy-ruler------------------------------------------------------|
+perl-file-copy-recursive: File::Copy::Recursive  (perl module)
+perl-file-copy-recursive:
+perl-file-copy-recursive: This module copies and moves directories recursively (or single
+perl-file-copy-recursive: files, well... singley) to an optional depth and attempts to
+perl-file-copy-recursive: preserve each file or directory's mode.
+perl-file-copy-recursive:
+perl-file-copy-recursive:
+perl-file-copy-recursive:
+perl-file-copy-recursive:
+perl-file-copy-recursive:
