@@ -1,0 +1,126 @@
+#!/bin/sh
+
+# Slackware build script for compiz-bzr
+
+# Written by R.Zelic
+
+PRGNAM=compiz
+VERSION=${VERSION:-0.9.9}
+BUILD=${BUILD:-1}
+TAG=${TAG:-_zero}
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/build}
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}
+
+if [ "$ARCH" = "i486" ]; then
+  SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+  SLKLDFLAGS=""; LIBDIRSUFFIX=""
+elif [ "$ARCH" = "i686" ]; then
+  SLKCFLAGS="-O2 -march=i686 -mtune=i686"
+  SLKLDFLAGS=""; LIBDIRSUFFIX=""
+elif [ "$ARCH" = "x86_64" ]; then
+  SLKCFLAGS="-O2 -fPIC"
+  SLKLDFLAGS="-L/usr/lib64"; LIBDIRSUFFIX="64"
+else
+  SLKCFLAGS="-O2"
+  LIBDIRSUFFIX=""
+fi
+
+set -e
+
+rm -rf $PKG
+mkdir -p $TMP $PKG $OUTPUT
+cd $TMP
+rm -rf $PRGNAM-$VERSION
+tar xvf $CWD/$PRGNAM-$VERSION.tar.bz2
+cd $PRGNAM-$VERSION
+chown -R root:root .
+find . \
+ \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+ -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
+ -exec chmod 644 {} \;
+
+export PYTHON="/usr/bin/python2"
+find -type f \( -name 'CMakeLists.txt' -or -name '*.cmake' \) -exec sed -e 's/COMMAND python/COMMAND python2/g' -i {} \;
+find compizconfig/ccsm -type f -exec sed -e 's|^#!.*python|#!/usr/bin/env python2|g' -i {} \;
+
+mkdir -p build
+cd build
+  cmake .. \
+    -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+    -DCMAKE_INSTALL_PREFIX="/usr" \
+    -DCOMPIZ_DISABLE_SCHEMAS_INSTALL=On \
+    -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+    -DCOMPIZ_BUILD_WITH_RPATH=Off \
+    -DCOMPIZ_PACKAGING_ENABLED=On \
+    -DBUILD_GTK=On \
+    -DBUILD_METACITY=On \
+    -DBUILD_KDE4=Off\
+    -DUSE_GCONF=On \
+    -DUSE_GSETTINGS=On \
+    -DCOMPIZ_BUILD_TESTING=Off \
+    -DCOMPIZ_DEFAULT_PLUGINS="composite,opengl,decor,resize,place,move"
+
+make
+make install DESTDIR=$PKG
+CMAKE_DIR=$(cmake --system-information | grep '^CMAKE_ROOT' | awk -F\" '{print $2}')
+install -dm755 "${PKG}/${CMAKE_DIR}/Modules/"
+install -m644 ../cmake/FindCompiz.cmake "${PKG}/${CMAKE_DIR}/Modules/"
+
+# Amend XDG .desktop file to load the compizconfig plugin with compiz
+sed -i 's/Exec\=compiz/Exec\=compiz ccp/' "${pkgdir}/usr/share/applications/compiz.desktop"
+
+# Merge the gconf schema files
+if [ -d "${PKG}/usr/share/gconf/schemas" ]; then    
+    gconf-merge-schema "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "{$PKG}"/usr/share/gconf/schemas/*.schemas
+    sed -i '/<schemalist\/>/d' "${PKG}/usr/share/gconf/schemas/compiz.schemas.in"
+    rm -f "${PKG}"/usr/share/gconf/schemas/*.schemas
+    mv "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "${PKG}/usr/share/gconf/schemas/compiz.schemas"
+fi    
+# Merge the gconf schema files
+if [ -d "${PKG}/usr/share/gconf/schemas" ]; then    
+    gconf-merge-schema "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "{$pkgdir}"/usr/share/gconf/schemas/*.schemas
+    sed -i '/<schemalist\/>/d' "${PKG}/usr/share/gconf/schemas/compiz.schemas.in"
+    rm -f "${PKG}"/usr/share/gconf/schemas/*.schemas
+    mv "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "${PKG}/usr/share/gconf/schemas/compiz.schemas"
+fi
+
+# Add the pesky gsettings schema files manually
+if ls -R generated | grep -qm1 .gschema.xml; then
+    install -dm755 "${PKG}/usr/share/glib-2.0/schemas/" 
+    install -m644 generated/*.gschema.xml "${PKG}/usr/share/glib-2.0/schemas/" 
+fi
+
+find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+cd $CWD/$PRGNAM
+cp -a \
+  AUTHORS COPYING ChangeLog INSTALL NEWS README VERSION \
+  $PKG/usr/doc/$PRGNAM-$VERSION
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+
+mkdir -p $PKG/install
+#cat $CWD/slack-desc > $PKG/install/slack-desc
+cat $CWD/doinst.sh > $PKG/install/doinst.sh
+
+cd $PKG
+
+#Ugly workaround
+mv usr/lib/* usr/lib64
+rmdir usr/lib
+
+/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
