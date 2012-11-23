@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# Slackware build script for compiz-bzr
+# Slackware build script for compiz-0.9
 
 # Written by R.Zelic
 
 PRGNAM=compiz
-VERSION=${VERSION:-0.9.9}
+VERSION=${VERSION:-0.9.8.6}
 BUILD=${BUILD:-1}
 TAG=${TAG:-_zero}
 
@@ -61,53 +61,39 @@ cd build
     -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
     -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
     -DCMAKE_INSTALL_PREFIX="/usr" \
-    -DCOMPIZ_DISABLE_SCHEMAS_INSTALL=On \
+    -DCOMPIZ_DISABLE_SCHEMAS_INSTALL=Off \
     -DLIB_SUFFIX=${LIBDIRSUFFIX} \
     -DCOMPIZ_BUILD_WITH_RPATH=Off \
     -DCOMPIZ_PACKAGING_ENABLED=On \
     -DBUILD_GTK=On \
-    -DBUILD_METACITY=On \
+    -DBUILD_METACITY=Off \
     -DBUILD_KDE4=Off\
     -DUSE_GCONF=On \
     -DUSE_GSETTINGS=On \
     -DCOMPIZ_BUILD_TESTING=Off \
     -DCOMPIZ_DEFAULT_PLUGINS="composite,opengl,decor,resize,place,move"
 
-make
+make -j4
 make install DESTDIR=$PKG
+
 CMAKE_DIR=$(cmake --system-information | grep '^CMAKE_ROOT' | awk -F\" '{print $2}')
-install -dm755 "${PKG}/${CMAKE_DIR}/Modules/"
-install -m644 ../cmake/FindCompiz.cmake "${PKG}/${CMAKE_DIR}/Modules/"
+install -dm755 "$PKG/$CMAKE_DIR/Modules/"
+install -m644 ../cmake/FindCompiz.cmake "$PKG/$CMAKE_DIR/Modules/"
 
 # Amend XDG .desktop file to load the compizconfig plugin with compiz
-sed -i 's/Exec\=compiz/Exec\=compiz ccp/' "${pkgdir}/usr/share/applications/compiz.desktop"
-
-# Merge the gconf schema files
-if [ -d "${PKG}/usr/share/gconf/schemas" ]; then    
-    gconf-merge-schema "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "{$PKG}"/usr/share/gconf/schemas/*.schemas
-    sed -i '/<schemalist\/>/d' "${PKG}/usr/share/gconf/schemas/compiz.schemas.in"
-    rm -f "${PKG}"/usr/share/gconf/schemas/*.schemas
-    mv "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "${PKG}/usr/share/gconf/schemas/compiz.schemas"
-fi    
-# Merge the gconf schema files
-if [ -d "${PKG}/usr/share/gconf/schemas" ]; then    
-    gconf-merge-schema "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "{$pkgdir}"/usr/share/gconf/schemas/*.schemas
-    sed -i '/<schemalist\/>/d' "${PKG}/usr/share/gconf/schemas/compiz.schemas.in"
-    rm -f "${PKG}"/usr/share/gconf/schemas/*.schemas
-    mv "${PKG}/usr/share/gconf/schemas/compiz.schemas.in" "${PKG}/usr/share/gconf/schemas/compiz.schemas"
-fi
+sed -i 's/Exec\=compiz/Exec\=compiz ccp/' "$PKG/usr/share/applications/compiz.desktop"
 
 # Add the pesky gsettings schema files manually
-if ls -R generated | grep -qm1 .gschema.xml; then
-    install -dm755 "${PKG}/usr/share/glib-2.0/schemas/" 
-    install -m644 generated/*.gschema.xml "${PKG}/usr/share/glib-2.0/schemas/" 
-fi
+if ls generated | grep -qm1 .gschema.xml; then
+    install -dm755 "$PKG/usr/share/glib-2.0/schemas/" 
+    install -m644 generated/*.gschema.xml "$PKG/usr/share/glib-2.0/schemas/" 
+fi  
 
 find $PKG | xargs file | grep -e "executable" -e "shared object" | grep ELF \
   | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
 
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
-cd $CWD/$PRGNAM
+cd $TMP/$PRGNAM-$VERSION
 cp -a \
   AUTHORS COPYING ChangeLog INSTALL NEWS README VERSION \
   $PKG/usr/doc/$PRGNAM-$VERSION
