@@ -84,13 +84,13 @@ mkdir -p $PKG/usr/share/{applications,pixmaps}
 mkdir -p $PKG/usr/share/icons/hicolor/{16x16,32x32,48x48,64x64}/apps
 # If the qt4 binary was built, we prefer to use that over the gtk version:
 if [ -x $PKG/usr/bin/avidemux3_qt4 ]; then
-  cat avidemux2.desktop | sed -e 's/2_gtk/3_qt4/' \
-    > $PKG/usr/share/applications/avidemux2.desktop
+  cat avidemux2.desktop | sed -e 's/2_gtk/3_qt4/' -e 's/avidemux2/Avidemux/' \
+    > $PKG/usr/share/applications/avidemux.desktop
 else
-  cat avidemux2.desktop | sed -e 's/2_gtk/3_gtk/' \
-    > $PKG/usr/share/applications/avidemux2.desktop
+  cat avidemux2.desktop | sed -e 's/2_gtk/3_gtk/' -e 's/avidemux2/Avidemux/' \
+    > $PKG/usr/share/applications/avidemux.desktop
 fi
-install -m644 avidemux_icon.png $PKG/usr/share/pixmaps/avidemux.png 
+install -m644 avidemux_icon.png $PKG/usr/share/pixmaps/avidemux.png
 install -m644 avidemux_icon.png \
   ${PKG}/usr/share/icons/hicolor/64x64/apps/avidemux.png
 convert avidemux_icon.png -resize 16x16 \
@@ -99,28 +99,6 @@ convert avidemux_icon.png -resize 32x32 \
   ${PKG}/usr/share/icons/hicolor/32x32/apps/avidemux.png
 convert avidemux_icon.png -resize 48x48 \
   ${PKG}/usr/share/icons/hicolor/48x48/apps/avidemux.png
-
-# Add this to the doinst.sh:
-! [ -d $PKG/install ] && mkdir -p $PKG/install
-cat <<EOT >> $PKG/install/doinst.sh
-# Update the desktop database:
-if [ -x usr/bin/update-desktop-database ]; then
-  chroot . /usr/bin/update-desktop-database /usr/share/applications > /dev/null 2>&1
-fi
-
-# Update hicolor theme cache:
-if [ -d usr/share/icons/hicolor ]; then
-  if [ -x /usr/bin/gtk-update-icon-cache ]; then
-    chroot . /usr/bin/gtk-update-icon-cache -f -t usr/share/icons/hicolor 1> /dev/null 2>&1
-  fi
-fi
-
-# Update the mime database:
-if [ -x usr/bin/update-mime-database ]; then
-  chroot . /usr/bin/update-mime-database usr/share/mime >/dev/null 2>&1
-fi
-
-EOT
 
 # Add documentation:
 mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
