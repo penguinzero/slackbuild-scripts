@@ -80,7 +80,6 @@ find . \
 
 if [ ! -f configure ] && [ -f bootstrap ]; then
   ./bootstrap
-else exit 1
 fi
 
 # Build external ffmpeg.
@@ -100,6 +99,7 @@ fi
 
 CFLAGS="$SLKCFLAGS" \
 CXXFLAGS="$SLKCFLAGS" \
+USE_FTGL=true \
 ./configure \
   --prefix=/usr \
   --libdir=/usr/lib${LIBDIRSUFFIX} \
@@ -109,13 +109,15 @@ CXXFLAGS="$SLKCFLAGS" \
   --disable-debug \
   --enable-gl \
   --enable-mid \
+  --enable-goom \
   --enable-ffmpeg-libvorbis \
+  --enable-alsa \
   --disable-asap-codec \
   $OPT_DEPS \
   --enable-external-libraries \
   --build=$ARCH-slackware-linux
 
-make
+make -j4
 
 # Wii controller usage. Default is no.
 if ! [ "${USE_WII:-no}" = "no" ]; then
