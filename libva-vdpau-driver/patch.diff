@@ -1,0 +1,11 @@
+--- src/vdpau_dump.c~	2013-07-06 12:54:56.212180517 +0200
++++ src/vdpau_dump.c	2013-07-06 12:55:15.467180899 +0200
+@@ -59,8 +59,6 @@
+         _(VAEncSequenceParameterBufferType);
+         _(VAEncPictureParameterBufferType);
+         _(VAEncSliceParameterBufferType);
+-        _(VAEncH264VUIBufferType);
+-        _(VAEncH264SEIBufferType);
+ #endif
+ #if VA_CHECK_VERSION(0,31,1)
+         _(VAQMatrixBufferType);
