@@ -1,0 +1,5 @@
+Android SDK is for developing software on android system.
+Note that this package contains only tools, so you have to download other SDK
+components via SDK manager included in package.
+For now, android SDK only support 32-bit system, so you need 32-bit library in
+your 64-bit system.
