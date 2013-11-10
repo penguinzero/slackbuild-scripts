@@ -1,0 +1,24 @@
+diff -Nur libgnome-2.32.1/libgnome/Makefile.am libgnome-2.32.1.build/libgnome/Makefile.am
+--- libgnome-2.32.1/libgnome/Makefile.am	2009-10-05 14:03:08.000000000 +0200
++++ libgnome-2.32.1.build/libgnome/Makefile.am	2013-04-02 15:23:12.794141898 +0200
+@@ -17,7 +17,6 @@
+ 	-I$(srcdir)/..						\
+ 	$(WARN_CFLAGS)						\
+ 	$(LIBGNOME_CFLAGS)					\
+-	-DG_DISABLE_DEPRECATED					\
+ 	-DLIBGNOME_PREFIX=\""$(prefix)"\"			\
+ 	-DLIBGNOME_LIBDIR=\""$(libdir)"\"			\
+ 	-DLIBGNOME_DATADIR=\""$(datadir)"\"			\
+diff -Nur libgnome-2.32.1/libgnome/Makefile.in libgnome-2.32.1.build/libgnome/Makefile.in
+--- libgnome-2.32.1/libgnome/Makefile.in	2011-01-31 14:36:49.000000000 
++0100
++++ libgnome-2.32.1.build/libgnome/Makefile.in	2013-11-10 14:28:25.599226546 
++0100
+@@ -311,7 +311,6 @@
+ 	-I$(srcdir)/..						\
+ 	$(WARN_CFLAGS)						\
+ 	$(LIBGNOME_CFLAGS)					\
+-	-DG_DISABLE_DEPRECATED					\
+ 	-DLIBGNOME_PREFIX=\""$(prefix)"\"			\
+ 	-DLIBGNOME_LIBDIR=\""$(libdir)"\"			\
+ 	-DLIBGNOME_DATADIR=\""$(datadir)"\"
