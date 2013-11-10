@@ -1,0 +1,22 @@
+diff -Nur libbonobo-2.32.1/activation-server/Makefile.am libbonobo-2.32.1.new/activation-server/Makefile.am
+--- libbonobo-2.32.1/activation-server/Makefile.am	2010-08-18 19:41:32.000000000 +0200
++++ libbonobo-2.32.1.new/activation-server/Makefile.am	2013-04-02 13:04:11.509777666 +0200
+@@ -17,7 +17,6 @@
+ 	$(SERVER_CFLAGS)			\
+ 	$(WARN_CFLAGS)				\
+ 	-DSERVER_CONFDIR=\"$(sysconfdir)\"	\
+-	-DG_DISABLE_DEPRECATED			\
+ 	-DG_LOG_DOMAIN=\"Bonobo-Activation-Server\" \
+ 	$(NULL)
+ 
+diff -Nur libbonobo-2.32.1/activation-server/Makefile.in libbonobo-2.32.1.new/activation-server/Makefile.in
+--- libbonobo-2.32.1/activation-server/Makefile.in	2011-04-04 14:14:14.000000000 +0200
++++ libbonobo-2.32.1.new/activation-server/Makefile.in	2013-04-02 13:39:49.169871009 +0200
+@@ -341,7 +341,6 @@
+ 	$(SERVER_CFLAGS)			\
+ 	$(WARN_CFLAGS)				\
+ 	-DSERVER_CONFDIR=\"$(sysconfdir)\"	\
+-	-DG_DISABLE_DEPRECATED			\
+ 	-DG_LOG_DOMAIN=\"Bonobo-Activation-Server\" \
+ 	$(NULL)
+
